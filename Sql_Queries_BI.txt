@@ -1,0 +1,294 @@
+/*Average movie runtime change over the years: 
+a. For every year what is the average run-time and plot it on the grap*/
+
+select avg(d.runtime_minutes) , d.year_of_release
+from dim_title d
+group by d.year_of_release
+order by avg(d.runtime_minutes);
+
+/*Is there a correlation between the average movie rating and the year of release? 
+a. The goal is to identify in which year we had good movies*/
+
+select avg(f.average_rating), d.year_of_release
+from fact_movie_ratings f, dim_title d
+where f.title_SK = d.title_sk
+group by d.year_of_release
+order by  d.year_of_release;
+
+/*Visualization of the distribution of movie releases per year
+a. No. of movies released every year*/
+
+select count(t.title_SK) , t.year_of_release
+from dim_title t  join dim_title d
+where t.Title_SK = d.Title_SK
+group by t.year_of_release
+order by t.year_of_release;
+
+/*Which genres have seen the most significant ratings in popularity over the past decade?
+a. The goal is to identify the popularity of the genres.*/
+
+SELECT
+    G.Genre_Name,
+    AVG(FMR.average_rating) AS Average_Rating
+FROM
+    Dim_Genre G
+JOIN
+    Bridge_Title_Genre BTG on G.genre_SK = BTG.Genre_SK
+JOIN
+    Fact_Movie_Ratings FMR ON BTG.Title_SK = FMR.Title_SK
+join 
+     Dim_title t on t.title_SK = FMR.Title_SK
+where t.year_of_release >= year(curdate()) - 10
+GROUP BY
+    G.Genre_Name
+ORDER BY
+    Average_Rating DESC;
+
+/*Show the top 5 genres as compared to gross earnings for the 9 box office movies*/
+    
+WITH RankedGenres AS (
+    SELECT
+        G.Genre_Name,
+        SUM(FMR.Gross) AS Total_Gross,
+        RANK() OVER (ORDER BY SUM(FMR.Gross) DESC) AS GenreRank
+    FROM
+        Dim_Genre G
+    JOIN
+        Bridge_Title_Genre BTG ON G.Genre_SK = BTG.Genre_SK
+    JOIN
+        Fact_Movie_Revenue FMR ON BTG.Title_SK = FMR.Title_SK
+    JOIN
+        Dim_Title T ON FMR.Title_SK = T.Title_SK
+    GROUP BY
+        G.Genre_Name
+)
+SELECT
+    Genre_Name,
+    Total_Gross
+FROM
+    RankedGenres
+WHERE
+    GenreRank <= 5;
+
+/*Correlation between the movie's runtime and its average rating
+a. The goal is to understand the impact on the ratings due to the movie's runtime*/
+
+
+SELECT
+    t.runtime_minutes,
+    fmr.average_rating
+FROM
+    Dim_Title t
+JOIN
+    Fact_Movie_Ratings fmr ON t.Title_SK = fmr.Title_SK;
+
+/*Correlation between the movie's runtime and its average gross 
+a. The goal is to understand the impact on the gross earnings due to the movie's runtime*/
+
+
+SELECT
+    t.runtime_minutes,
+    fmr.average_gross
+FROM
+    Dim_Title t
+JOIN
+    Fact_Movie_Revenue fmr ON t.Title_SK = fmr.Title_SK;
+
+/*Relationship between the number of votes and the average rating of movies.
+a. The goal is to identify the correlation between votes and rating*/
+
+SELECT
+    fmr.num_of_votes,
+    fmr.average_rating
+FROM
+    Fact_Movie_Ratings fmr;
+
+/*identify directors with the most films rated above 7. Sort them in the descending order
+a. The goal is to identify which directors have made films that were received well by the 
+audience */
+
+SELECT
+    dc.cast_name AS Director,
+    COUNT(DISTINCT fr.Title_SK) AS Total_Films_Above_7
+FROM
+    Dim_Cast dc
+JOIN
+    Bridge_Cast_Title bct ON dc.Cast_SK = bct.Cast_SK
+JOIN
+    Dim_Title dt ON bct.Title_SK = dt.Title_SK
+JOIN
+    Fact_Movie_Ratings fr ON dt.Title_SK = fr.Title_SK
+WHERE
+    fr.average_rating > 7
+GROUP BY
+    dc.cast_name
+ORDER BY
+    Total_Films_Above_7 DESC;
+    
+/*Determine the directors who have directed the highest number of films overall and their respective 
+gross earnings trends.
+a. The goal is to identify if there are any notable directors who consistently contribute to high grossing movies*/
+
+SELECT
+    dc.cast_name AS Director,
+    COUNT(DISTINCT dt.Title_SK) AS Total_Films,
+    SUM(r.Total_Gross) AS Total_Gross_Earnings
+FROM
+    Dim_Cast dc
+JOIN
+    Bridge_Cast_Title bct ON dc.Cast_SK = bct.Cast_SK
+JOIN
+    Dim_Title dt ON bct.Title_SK = dt.Title_SK
+LEFT JOIN (
+    SELECT
+        Title_SK,
+        SUM(Total_Gross) AS Total_Gross
+    FROM
+        Fact_Movie_Revenue
+    GROUP BY
+        Title_SK
+) r ON dt.Title_SK = r.Title_SK
+GROUP BY
+    dc.cast_name
+ORDER BY
+    Total_Films DESC, Total_Gross_Earnings DESC
+LIMIT 0, 500;
+
+
+
+
+/*List the top 10 actors/actresses with the most films rated between 4 and 7.
+a. The goal is to identify the popular actors/actresses*/
+
+SELECT
+    D.cast_name,
+    COUNT(*) AS FilmsCount
+FROM
+    Dim_Cast D
+JOIN
+    Bridge_Cast_Title B ON D.Cast_SK = B.Cast_SK
+JOIN
+    Fact_Movie_Ratings F ON B.Title_SK = F.Title_SK
+WHERE
+    D.cast_name IS NOT NULL
+    AND D.cast_name <> ''
+    AND F.average_rating BETWEEN 4 AND 7
+GROUP BY
+    D.cast_name
+ORDER BY
+    FilmsCount DESC
+LIMIT 10;
+
+
+/*Compare the top 5 actors and actresses based on movie ratings.
+a. The goal is to compare the top 5 actor and actresses*/
+
+SELECT
+    D.cast_name,
+    AVG(F.average_rating) AS AverageRating
+FROM
+    Dim_Cast D
+JOIN
+    Bridge_Cast_Title B ON D.Cast_SK = B.Cast_SK
+JOIN
+    Fact_Movie_Ratings F ON B.Title_SK = F.Title_SK
+WHERE
+    D.cast_name IS NOT NULL
+    AND D.cast_name <> ''
+    AND D.profession_name IN ('actor', 'actress')
+GROUP BY
+    D.cast_name
+ORDER BY
+    AverageRating DESC
+LIMIT 5;
+
+
+/*How does movie performance vary across different seasons of the year? (based on gross earnings)
+a. The goal is to identify which season has an impact on the revenue.
+*/
+
+SELECT
+    Season_Name,
+    SUM(R.Gross) AS TotalGrossEarnings
+FROM
+    Dim_Date D
+JOIN
+    Fact_Movie_Revenue R ON D.Date_SK = R.Date_SK
+GROUP BY
+    Season_Name
+ORDER BY
+    TotalGrossEarnings DESC;
+
+/*Top 3 movies based on the season (spring, summer, fall)
+a. Spring - Jan to April
+b. Summer - May to August
+c. Fall - September to December*/
+
+
+SELECT
+   season_name,
+    AVG(fr.Gross) AS Average_Gross_Earnings
+FROM
+    Fact_Movie_Revenue fr
+JOIN
+    Dim_Date d ON fr.Date_SK = d.Date_SK
+GROUP BY
+    Season_name
+ORDER BY
+    Season_name;
+
+
+/*dentify movies that have had the widest release across multiple regions.
+a. The goal is to identify which movie was released in most regions.*/
+
+SELECT
+    D.primary_title,
+    COUNT(DISTINCT TR.Region_SK) AS ReleaseRegions
+FROM
+    Dim_Title D
+JOIN
+    Bridge_Title_Region TR ON D.Title_SK = TR.Title_SK
+GROUP BY
+    D.primary_title
+ORDER BY
+    ReleaseRegions DESC
+LIMIT 1;
+
+
+/*Create a dashboard for the 9 box office movies that shows movie-wise:
+1. No. of directors
+2. No. of actors/actresses
+3. No. of writers
+4. Total worldwide gross earnings
+5. Average ratings
+6. No. of regions, it was released
+7. No. of genres*/
+
+SELECT
+    D.primary_title,
+    COUNT(DISTINCT B.Cast_SK) AS DirectorsCount,
+    COUNT(DISTINCT B.Cast_SK) AS ActorsActressesCount,
+    COUNT(DISTINCT B.Profession_SK) AS WritersCount,
+    SUM(R.Gross) AS TotalWorldwideGross,
+    AVG(F.average_rating) AS AverageRatings,
+    COUNT(DISTINCT TR.Region_SK) AS ReleaseRegions,
+    COUNT(DISTINCT TG.Genre_SK) AS GenreCount
+FROM
+    Dim_Title D
+JOIN
+    Bridge_Cast_Title B ON D.Title_SK = B.Title_SK
+JOIN
+    Fact_Movie_Ratings F ON D.Title_SK = F.Title_SK
+JOIN
+    Fact_Movie_Revenue R ON D.Title_SK = R.Title_SK
+JOIN
+    Bridge_Title_Region TR ON D.Title_SK = TR.Title_SK
+JOIN
+    Bridge_Title_Genre TG ON D.Title_SK = TG.Title_SK
+GROUP BY
+    D.primary_title
+ORDER BY
+    TotalWorldwideGross DESC
+LIMIT 9;
+
+

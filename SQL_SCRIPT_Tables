@@ -1,0 +1,285 @@
+--
+-- ER/Studio Data Architect SQL Code Generation
+-- Project :      Updated Final Project Model.DM1
+--
+-- Date Created : Sunday, December 03, 2023 23:51:54
+-- Target DBMS : MySQL 8.x
+--
+
+-- 
+-- TABLE: Bridge_Cast_Title 
+--
+
+CREATE TABLE Bridge_Cast_Title(
+    Cast_Title_SK     INT             NOT NULL,
+    Cast_SK           INT             NOT NULL,
+    Title_SK          INT             NOT NULL,
+    Profession_SK     INT             NOT NULL,
+    DI_Create_Date    DATETIME,
+    DI_JobID          VARCHAR(255),
+    PRIMARY KEY (Cast_Title_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Bridge_Title_Genre 
+--
+
+CREATE TABLE Bridge_Title_Genre(
+    Title_Genre_SK     INT             NOT NULL,
+    Title_SK           INT             NOT NULL,
+    Genre_SK           INT             NOT NULL,
+    DI_Created_Date    DATETIME,
+    DI_JobID           VARCHAR(255),
+    PRIMARY KEY (Title_Genre_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Bridge_Title_Region 
+--
+
+CREATE TABLE Bridge_Title_Region(
+    Title_Region_SK    INT             NOT NULL,
+    Title_SK           INT             NOT NULL,
+    Region_SK          INT             NOT NULL,
+    DI_Create_Date     DATETIME,
+    DI_JobID           VARCHAR(255),
+    PRIMARY KEY (Title_Region_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Dim_Cast 
+--
+
+CREATE TABLE Dim_Cast(
+    Cast_SK           INT              NOT NULL,
+    cast_nconst       VARCHAR(10),
+    cast_name         VARCHAR(1000),
+    birthyear         INT,
+    deathyear         INT,
+    scd_start         DATE,
+    scd_end           DATE,
+    scd_version       INT,
+    scd_active        INT,
+    DI_Create_Date    DATETIME,
+    DI_JobID          VARCHAR(255),
+    DI_Modified_DT    DATETIME,
+    PRIMARY KEY (Cast_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Dim_Date 
+--
+
+CREATE TABLE Dim_Date(
+    Date_SK           DATE            NOT NULL,
+    Year              INT,
+    Season_Name       VARCHAR(100),
+    Quarter           INT,
+    Month             VARCHAR(10),
+    DI_Create_Date    DATETIME,
+    DI_JobID          VARCHAR(255),
+    PRIMARY KEY (Date_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Dim_Genre 
+--
+
+CREATE TABLE Dim_Genre(
+    Genre_SK          INT              NOT NULL,
+    Genre_Name        VARCHAR(2000),
+    DI_Create_Date    DATETIME,
+    DI_JobID          VARCHAR(255),
+    PRIMARY KEY (Genre_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Dim_Profession 
+--
+
+CREATE TABLE Dim_Profession(
+    Profession_SK      INT             NOT NULL,
+    profession_name    VARCHAR(255),
+    DI_Create_Date     DATETIME,
+    DI_JobID           VARCHAR(255),
+    PRIMARY KEY (Profession_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Dim_Regions 
+--
+
+CREATE TABLE Dim_Regions(
+    Region_SK         INT             NOT NULL,
+    region_code       VARCHAR(255),
+    region_name       VARCHAR(255),
+    DI_Create_Date    DATETIME,
+    DI_JobID          VARCHAR(255),
+    PRIMARY KEY (Region_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Dim_Title 
+--
+
+CREATE TABLE Dim_Title(
+    Title_SK           INT              NOT NULL,
+    tconst             VARCHAR(20),
+    primary_title      VARCHAR(1024),
+    original_title     VARCHAR(1024),
+    isAdult            INT,
+    year_of_release    INT,
+    average_rating     DOUBLE(18, 0),
+    scd_start          DATE,
+    scd_end            DATE,
+    scd_version        INT,
+    scd_active         INT,
+    DI_Create_Date     DATETIME,
+    DI_JobID           VARCHAR(255),
+    DI_Modified_DT     DATETIME,
+    PRIMARY KEY (Title_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Fact_Movie_Ratings 
+--
+
+CREATE TABLE Fact_Movie_Ratings(
+    Movie_Ratings_SK    INT              NOT NULL,
+    Title_SK            INT              NOT NULL,
+    num_of_votes        INT,
+    average_rating      DOUBLE(18, 0),
+    DI_Create_Date      DATETIME,
+    DI_JobID            VARCHAR(255),
+    PRIMARY KEY (Movie_Ratings_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Fact_Movie_Revenue 
+--
+
+CREATE TABLE Fact_Movie_Revenue(
+    Revenue_SK           INT              NOT NULL,
+    Title_SK             INT              NOT NULL,
+    Date_SK              DATE             NOT NULL,
+    Movie_Rank           INT,
+    Gross                INT,
+    Percent_Yesterday    DOUBLE(18, 0),
+    Percent_Last_Week    DOUBLE(18, 0),
+    Theatres             INT,
+    Per_Theatre          INT,
+    Total_Gross          INT,
+    Days                 INT,
+    DI_Create_Date       DATETIME,
+    DI_JobID             VARCHAR(255),
+    PRIMARY KEY (Revenue_SK)
+)ENGINE=MYISAM
+;
+
+
+
+-- 
+-- TABLE: Bridge_Cast_Title 
+--
+
+ALTER TABLE Bridge_Cast_Title ADD CONSTRAINT RefDim_Cast36 
+    FOREIGN KEY (Cast_SK)
+    REFERENCES Dim_Cast(Cast_SK)
+;
+
+ALTER TABLE Bridge_Cast_Title ADD CONSTRAINT RefDim_Title37 
+    FOREIGN KEY (Title_SK)
+    REFERENCES Dim_Title(Title_SK)
+;
+
+ALTER TABLE Bridge_Cast_Title ADD CONSTRAINT RefDim_Profession40 
+    FOREIGN KEY (Profession_SK)
+    REFERENCES Dim_Profession(Profession_SK)
+;
+
+
+-- 
+-- TABLE: Bridge_Title_Genre 
+--
+
+ALTER TABLE Bridge_Title_Genre ADD CONSTRAINT RefDim_Title32 
+    FOREIGN KEY (Title_SK)
+    REFERENCES Dim_Title(Title_SK)
+;
+
+ALTER TABLE Bridge_Title_Genre ADD CONSTRAINT RefDim_Genre33 
+    FOREIGN KEY (Genre_SK)
+    REFERENCES Dim_Genre(Genre_SK)
+;
+
+
+-- 
+-- TABLE: Bridge_Title_Region 
+--
+
+ALTER TABLE Bridge_Title_Region ADD CONSTRAINT RefDim_Title31 
+    FOREIGN KEY (Title_SK)
+    REFERENCES Dim_Title(Title_SK)
+;
+
+ALTER TABLE Bridge_Title_Region ADD CONSTRAINT RefDim_Regions42 
+    FOREIGN KEY (Region_SK)
+    REFERENCES Dim_Regions(Region_SK)
+;
+
+
+-- 
+-- TABLE: Fact_Movie_Ratings 
+--
+
+ALTER TABLE Fact_Movie_Ratings ADD CONSTRAINT RefDim_Title38 
+    FOREIGN KEY (Title_SK)
+    REFERENCES Dim_Title(Title_SK)
+;
+
+
+-- 
+-- TABLE: Fact_Movie_Revenue 
+--
+
+ALTER TABLE Fact_Movie_Revenue ADD CONSTRAINT RefDim_Title39 
+    FOREIGN KEY (Title_SK)
+    REFERENCES Dim_Title(Title_SK)
+;
+
+ALTER TABLE Fact_Movie_Revenue ADD CONSTRAINT RefDim_Date41 
+    FOREIGN KEY (Date_SK)
+    REFERENCES Dim_Date(Date_SK)
+;
+
+
